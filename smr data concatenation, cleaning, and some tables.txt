@@ -1,0 +1,69 @@
+#Remove leftover runoff values...
+smr.data3 = SMR.data2[which(SMR.data2$provfs != "Short" ),]
+dim(smr.data3)
+
+dim(DFC)
+dim(alarm)
+head(DFC)
+head(alarm)
+matchID = match(DFC[,1], alarm[,1])
+length(matchID)
+length(which(!is.na(matchID)))
+alarmID=matchID[which(!is.na(matchID))]
+DFCID = which(!is.na(matchID))
+length(alarmID)
+length(DFCID)
+HUGE = cbind(DFC[DFCID,], alarm[alarmID,])
+dim(HUGE)
+HUGEnames=colnames(HUGE)
+length(HUGEnames)
+tail(HUGEnames)
+write.csv(HUGE, file="huge.csv")
+
+head(HUGE)
+
+#Add in the 2010 smr data to categorize facilities as starting good or bad (no CIs, sadly...)
+smr.datac = smr.data3[,c(2, 7)]
+head(smr.datac)
+dim(HUGE)
+dim(smr.datac)
+head(HUGE)
+head(smr.datac)
+matchID = match(HUGE[,1], smr.datac[,1])
+length(matchID)
+length(which(!is.na(matchID)))
+smr.datacID=matchID[which(!is.na(matchID))]
+HUGEID = which(!is.na(matchID))
+length(smr.datacID)
+length(HUGEID)
+use = cbind(HUGE[HUGEID,], smr.datac[smr.datacID,])
+dim(use)
+usenames=colnames(use)
+length(usenames)
+tail(usenames)
+head(use)
+use$smr_cat = NA
+use$smr_cat[which(use$smr<1)] = -1
+use$smr_cat[which(use$smr>1)] = 1
+tail(use)
+
+
+table(factor(use$smr_cat),factor(use$upper_alarm),(use$lower_alarm))
+use$change = NA
+
+#Cutting out the 'boring' facilities (Those with no significant improvement or worsening)
+use$change[which(use$upper_alarm == FALSE & use$lower_alarm == TRUE)] = 1
+use$change[which(use$upper_alarm == TRUE & use$lower_alarm == FALSE)] = 2
+use$change[which(use$upper_alarm == TRUE & use$lower_alarm == TRUE)] = 3
+use$change = factor(x = use$change,levels=c(1, 2, 3), labels = c("improved", "worsened", "both"))
+use2 = use[which(use$upper_alarm != FALSE | use$lower_alarm != FALSE),]
+tail(use2)
+
+table(factor(use2$change), factor(use2$smr_cat))
+chisq.test(factor(use2$change),factor(use2$smr_cat))
+table(factor(use2$change))
+dim(use2)
+
+use2$DFCMORTTEXT[1:10]
+use4 = use2[which(use2$DFCMORTTEXT == "Worse than Expected" | use2$DFCMORTTEXT == "Better than Expected"),]
+table(use4$DFCMORTTEXT, use4$change)
